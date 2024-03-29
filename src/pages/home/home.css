@@ -1,0 +1,30 @@
+.create-post{
+    position: fixed;
+    right: 25px;
+    margin-top: 20px;
+}
+.post-card{
+    height: 470px;
+    z-index: 0 ;
+}
+.description{
+    font-size: 18px;
+}
+.btn:focus{
+    box-shadow:none
+}
+.pagination-container{
+    position: fixed;
+    bottom: 5px;
+    right: 10px;
+}
+.visually-hidden{
+    display: none;
+}
+.myPostSwitch{
+    position: fixed;
+    right: 150px;
+    margin-top: 20px;}
+    img{
+        max-width: -webkit-fill-available;
+    }

@@ -1,0 +1,3 @@
+[submodule "social-media-node-app"]
+	path = social-media-node-app
+	url = https://github.com/dhruvwo/social-media-node.git

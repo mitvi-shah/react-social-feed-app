@@ -1,38 +1,124 @@
-.App {
+
+  body{
+    background-color: #ededed;
+}
+h1{
   text-align: center;
+  font-family: serif;
 }
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.main-content{
+  padding-left: 250px;
+  padding-top: 60px;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.messages {
+  text-align: left;
 }
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.error {
+  display: block;
+  color: red;
+  height: 25px;
+}
+.star{
+  color: red;
+  position: relative;
+  bottom: 5px;
+}
+.form{
+  font-family: serif;
+  margin-top: 3rem;
+  width: 100%;
+  height: 40vh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  align-items: center;
+}
+.reg-form{
+  height: 70vh;
+}
+.form-label-container{
+  width: 30%;
+  height: 100%;
+}
+.main-container{
+  background-color: #8acfff;
+  display: flex;
+  width: 40%;
+  height: 100%;
+}
+.form-input-container{
+  height: 100%;
+  width: 70%;
+}
+.label-control, .form-inputs{
+  margin: 5px;
+  padding: 5px;
+  height: 60px;
+}
+.label-control{
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+}
+.bg-blue{
+  background-color: #2d5887;
+}
+.navbar-container{
+  z-index: 11;
+  height: 70px;
+  width: 100%;
+  background-color: #254568;
   color: white;
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content:space-between;
+  font-size: 19px;
+  font-family: serif;
+}
+.layout{
+  padding-top: 70px;
+}
+.page-layout{
+  height: calc(100vh - 70px);
+}
+.loader {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+  margin:15px auto;
+  position: relative;
+  color: #254568;
+  box-sizing: border-box;
+  animation: animloader 1s linear infinite alternate;
 }
 
-.App-link {
-  color: #61dafb;
+@keyframes animloader {
+  0% {
+    box-shadow: -38px -12px ,  -14px 0,  14px 0, 38px 0;
+  }
+  33% {
+    box-shadow: -38px 0px, -14px -12px,  14px 0, 38px 0;
+  }
+  66% {
+    box-shadow: -38px 0px , -14px 0, 14px -12px, 38px 0;
+  }
+  100% {
+    box-shadow: -38px 0 , -14px 0, 14px 0 , 38px -12px;
+  }
 }
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.loader-container{
+  height: calc(100vh - 70px) !important;
+}
+.accordion-button{
+  padding: 0;
+    border: 0 ;
+    background: white;
+}
+.nav-links, .nav-links:hover{
+  cursor: pointer;
+  color:#d8defa
+}
+.active{
+  color: white;
 }
