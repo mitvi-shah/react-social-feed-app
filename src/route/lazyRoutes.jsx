@@ -4,6 +4,7 @@ import PropType from 'prop-types';
 import { useRoutes } from 'react-router-dom';
 
 import { LoginRoutes, PrivateRoutes } from './RequireAuth';
+import Loader from '../components/Loader';
 
 export const Router = () => {
   const LazyReg = React.lazy(() => import('../pages/register/Register'));
@@ -43,13 +44,7 @@ export const Router = () => {
 };
 
 export const ReactSuspense = ({ Component }) => (
-  <React.Suspense
-    fallback={
-      <div className="d-flex justify-content-center align-items-center w-100 loader-container h-100">
-        <span className="loader"></span>
-      </div>
-    }
-  >
+  <React.Suspense fallback={<Loader />}>
     <Component />
   </React.Suspense>
 );

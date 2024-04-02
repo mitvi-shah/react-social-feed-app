@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import PropType from 'prop-types';
-const TimeAgo = ({ timestamp }) => {
+export const TimeAgo = ({ timestamp }) => {
   const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
@@ -37,7 +37,6 @@ const TimeAgo = ({ timestamp }) => {
   return timeAgo;
 };
 
-export default TimeAgo;
 TimeAgo.propTypes = {
   timestamp: PropType.any,
 };

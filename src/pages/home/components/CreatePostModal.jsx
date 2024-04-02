@@ -3,57 +3,47 @@ import React, { useRef, useState } from 'react';
 import '../home.css';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { yupResolver } from '@hookform/resolvers/yup';
 import PropType from 'prop-types';
 import { Button, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
+import * as yup from 'yup';
 
-import DisplayError from '../../../components/DisplayError';
+import Loader from '../../../components/Loader';
 import { useCreatePostMutation } from '../../../store/postsApi';
+import { postSchema } from '../../../utils/validationSchemas';
 
 const CreatePostModal = ({ showModal, setShowModal }) => {
-  const [error, setError] = useState({});
-  const [postData, setPostData] = useState({});
   const [createPost, { isError, isLoading }] = useCreatePostMutation();
-
+  const [apiErrors, setApiErrors] = useState('');
+  const schema = yup.object().shape(postSchema);
+  const {
+    register,
+    unregister,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
   const fileRef = useRef(null);
 
-  const handleFormSubmit = async () => {
-    const obj = {};
-    !postData.title && (obj.title = 'Please enter title');
-    !postData.description && (obj.description = 'Please enter description');
-    !postData.isPrivate && (obj.type = 'Please select post type');
-    !postData.image && (obj.image = 'Please select image');
-    setError(obj);
-    if (Object.keys(postData).length === 4) {
-      // getBase64(image).then((res) => {
-      //   post.image = res;
-      // });
-      try {
-        const response = await createPost(postData);
-        // dispatch(
-        //   postsApi.util.updateQueryData(
-        //     'getFeedPosts',
+  const addPost = async (data) => {
+    // getBase64(image).then((res) => {
+    //   post.image = res;
+    // });
+    try {
+      const response = await createPost(data);
 
-        //     (cachedData) => {
-        //       return {
-        //         ...cachedData,
-        //         data: [...cachedData.data, response.data.data],
-        //       };
-        //     }
-        //   )
-        // );
-        isLoading && <span className="loader"></span>;
-        setShowModal(null);
-        setPostData({});
-        if (isError) {
-          obj.image = 'Something went wrong, please try again!';
-          setError(obj);
-        } else if (!response?.data) {
-          obj.image = 'Something went wrong please try again!';
-          setError(obj);
-        }
-      } catch (error) {
-        console.log(error);
+      isLoading && <Loader />;
+      setShowModal(null);
+      if (isError) {
+        setApiErrors(response.error.data.message);
+      } else if (!response?.data) {
+        setApiErrors(response.error.data.message);
       }
+    } catch (error) {
+      setApiErrors(error);
     }
   };
 
@@ -69,151 +59,145 @@ const CreatePostModal = ({ showModal, setShowModal }) => {
   // }
 
   return (
-    <>
-      <Modal
-        show={showModal}
-        onHide={() => {
-          setShowModal(null);
-        }}
-        size="lg"
-      >
-        <form>
-          <div className="border-bottom p-3 h3 d-flex justify-content-between align-items-center">
-            Create Post
-            <FontAwesomeIcon
-              icon={faXmark}
-              onClick={() => {
-                setError({});
-                setShowModal(false);
-              }}
-            />
+    <Modal
+      show={showModal}
+      onHide={() => {
+        setShowModal(null);
+      }}
+      size="lg"
+    >
+      <form type="submit" onSubmit={handleSubmit(addPost)}>
+        <div className="border-bottom p-3 h3 d-flex justify-content-between align-items-center">
+          Create Post
+          <FontAwesomeIcon
+            icon={faXmark}
+            onClick={() => {
+              setShowModal(false);
+            }}
+          />
+        </div>
+        <div className="px-3">
+          <div className="d-flex align-items-center py-2">
+            <label className="mr-2 w-25">
+              Title: <span className="star">*</span> :
+            </label>
+            <div className="w-100">
+              <input
+                className="form-control"
+                type="text"
+                id="title"
+                name="title"
+                placeholder="Enter title"
+                {...register('title')}
+              />
+              {errors.title && (
+                <span className="error"> {errors.title?.message}</span>
+              )}
+            </div>
           </div>
-          <div className="px-3">
-            <div className="d-flex align-items-center py-2">
-              <label className="mr-2 w-25">
-                Title: <span className="star">*</span> :
-              </label>
-              <div className="w-100">
+          <div className="d-flex align-items-center py-2">
+            <label className="mr-2 w-25">
+              Description <span className="star">*</span> :
+            </label>
+            <div className="w-100">
+              <textarea
+                name="description"
+                id="description"
+                className="form-control"
+                {...register('description')}
+                placeholder="Enter Description"
+                rows="3"
+              ></textarea>
+              {errors.description && (
+                <span className="error"> {errors.description?.message}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="d-flex  align-items-center py-2">
+            <label className="mr-2 w-25">
+              Post Type <span className="star">*</span> :
+            </label>
+            <div className="w-100">
+              <div className="d-flex align-items-center h-100">
                 <input
-                  type="text"
-                  name="title"
-                  className="form-control"
-                  onChange={(e) =>
-                    setPostData({ ...postData, title: e.target.value })
-                  }
-                  placeholder="Enter Title"
+                  className="mr-2"
+                  type="radio"
+                  value="true"
+                  name="isPrivate"
+                  id="private"
+                  {...register('isPrivate')}
                 />
-                <DisplayError error={error.title} />
+                <label className="mb-0" htmlFor="private">
+                  Private
+                </label>
+                <input
+                  className="mx-2"
+                  type="radio"
+                  value="false"
+                  name="isPrivate"
+                  id="public"
+                  {...register('isPrivate')}
+                />
+                <label className="mb-0" htmlFor="public">
+                  Public
+                </label>
               </div>
-            </div>
-
-            <div className="d-flex align-items-center py-2">
-              <label className="mr-2 w-25">
-                Description <span className="star">*</span> :
-              </label>
-              <div className="w-100">
-                <textarea
-                  name="description"
-                  className="form-control"
-                  onChange={(e) =>
-                    setPostData({ ...postData, description: e.target.value })
-                  }
-                  placeholder="Enter Description"
-                  rows="3"
-                ></textarea>
-                {error.description && (
-                  <DisplayError error={error.description} />
-                )}
-              </div>
-            </div>
-
-            <div className="d-flex  align-items-center py-2">
-              <label className="mr-2 w-25">
-                Post Type <span className="star">*</span> :
-              </label>
-              <div className="w-100">
-                <div
-                  className="d-flex align-items-center h-100"
-                  onChange={(e) =>
-                    setPostData({ ...postData, isPrivate: e.target.value })
-                  }
-                >
-                  <input
-                    className="mr-2"
-                    type="radio"
-                    value="true"
-                    id="private"
-                    name="accType"
-                    defaultChecked={postData.isPrivate === 'true'}
-                  />
-                  <label className="mb-0" htmlFor="private">
-                    Private
-                  </label>
-                  <input
-                    className="mx-2"
-                    type="radio"
-                    value="false"
-                    id="public"
-                    name="accType"
-                    defaultChecked={postData.isPrivate === 'false'}
-                  />
-                  <label className="mb-0" htmlFor="public">
-                    Public
-                  </label>
-                </div>
-                <DisplayError error={error.type} />
-              </div>
-            </div>
-            <div className="d-flex align-items-center py-2">
-              <label htmlFor="image" className="mr-2 w-25">
-                Photo <span className="star">*</span>:
-              </label>
-              <div className="w-100">
-                <div className="d-flex align-items-center">
-                  <input
-                    ref={fileRef}
-                    onChange={(e) =>
-                      setPostData({ ...postData, image: e.target.files[0] })
-                    }
-                    type="file"
-                    name="image"
-                    className="form-control border-0 pl-0 w-75"
-                  />
-
-                  <button
-                    onClick={(e) => {
-                      setPostData({ ...postData, image: null });
-                      fileRef.current.value = '';
-                    }}
-                    type="button"
-                    className="btn btn-primary w-25"
-                    disabled={!postData.image}
-                  >
-                    Remove Image
-                  </button>
-                </div>
-                {error.image && <DisplayError error={error.image} />}
-              </div>
+              {errors.isPrivate && (
+                <span className="error">{errors.isPrivate?.message}</span>
+              )}
             </div>
           </div>
-          <Modal.Footer>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setError({});
-                setShowModal(false);
-              }}
-            >
-              Close
-            </Button>
-            <Button variant="primary" onClick={handleFormSubmit} type="button">
-              Save Changes
-            </Button>
-          </Modal.Footer>
-        </form>
-      </Modal>
-    </>
+          <div className="d-flex align-items-center py-2">
+            <label htmlFor="image" className="mr-2 w-25">
+              Photo <span className="star">*</span>:
+            </label>
+            <div className="w-100">
+              <div className="d-flex align-items-center">
+                <input
+                  ref={fileRef}
+                  {...register('image')}
+                  type="file"
+                  name="image"
+                  className="form-control border-0 pl-0 w-75"
+                />
+
+                <button
+                  onClick={(e) => {
+                    unregister('image');
+                    fileRef.current.value = '';
+                  }}
+                  type="button"
+                  className="btn btn-primary w-25"
+                  disabled={!watch('image')}
+                >
+                  Remove Image
+                </button>
+              </div>
+              {errors.image && (
+                <span className="error">{errors.image?.message}</span>
+              )}
+              {apiErrors && <div className="error">{apiErrors}</div>}
+            </div>
+          </div>
+        </div>
+
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setShowModal(false);
+            }}
+          >
+            Close
+          </Button>
+          <Button variant="primary" type="submit">
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 };
 

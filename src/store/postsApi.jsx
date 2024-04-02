@@ -32,6 +32,7 @@ export const postsApi = createApi({
     }),
     getFeedPosts: builder.query({
       query: (arg) => {
+        console.log(arg);
         return {
           url: '/posts/get-feed-posts',
           params: arg,

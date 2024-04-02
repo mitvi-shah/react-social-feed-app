@@ -1,92 +1,51 @@
 import React, { useState } from 'react';
 
-import cloneDeep from 'lodash/cloneDeep';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
 
-import DisplayError from '../../components/DisplayError';
 import { useRegisterUserMutation } from '../../store/authApi';
+import { registrationSchema } from '../../utils/validationSchemas';
 
 const Register = () => {
-  const [userData, setUserData] = useState({});
-  const [error, setError] = useState({});
-
   const navigate = useNavigate();
-  const [registerUser, { isLoading }] = useRegisterUserMutation();
+  const [registerUser] = useRegisterUserMutation();
+  const [apiErrors, setApiErrors] = useState('');
+  const schema = yup.object().shape(registrationSchema);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError({});
-
-    const obj = {};
-    if (!userData.firstname) {
-      obj.firstnameErr = 'Please enter first name';
-    } else if (!/^[a-zA-Z]+$/.test(userData.firstname)) {
-      obj.firstnameErr = 'Only letters are allowed!';
-    }
-    if (!userData.lastname) {
-      obj.lastNameErr = 'Please enter last name';
-    } else if (!/^[a-zA-Z]+$/.test(userData.lastname)) {
-      obj.lastNameErr = 'Only letters are allowed!';
-    }
-    if (!userData.username) {
-      obj.usernameErr = 'Please enter username';
-    } else if (userData.username.length < 6) {
-      obj.usernameErr = 'Username must be at least 6 characters long';
-    }
-    if (!userData.email) {
-      obj.emailErr = 'Please enter email';
-    } else if (!userData.email.toLowerCase().match(/^\S+@\S+\.\S+$/)) {
-      obj.emailErr = 'Please enter valid email!';
-    }
-    if (!userData.password) {
-      obj.passwordErr = 'Please enter password';
-    } else if (userData.password.length < 8 || userData.password.length > 15) {
-      obj.passwordErr = 'Password must be between 8 to 15 characters!';
-    } else if (
-      !/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(
-        userData.password
-      )
-    ) {
-      obj.passwordErr =
-        'Password must contain a letter, a number & a special character!';
-    }
-    if (!userData.confirmPassword) {
-      obj.confirmPasswordErr = 'Please confirm password';
-    } else if (userData.confirmPassword !== userData.password) {
-      obj.confirmPasswordErr = 'Password and confirm Password must be same!';
-    }
-    if (!userData.isPrivate) {
-      obj.accTypeErr = 'Please select account type';
-    }
-    setError(obj);
-    if (!Object.keys(obj).length) {
-      try {
-        const user = cloneDeep(userData);
-        delete user.confirmPassword;
-        const response = await registerUser(user);
-        if (response.data?.status === 'success') {
-          setUserData({});
-          navigate('/login');
-        } else if (response.error?.status !== 200) {
-          obj.accTypeErr = response.error.data.message;
-          setError(obj);
-        } else if (!response.data) {
-          obj.accTypeErr = 'Something went wrong please try again!';
-          setError(obj);
-        }
-      } catch (error) {
-        obj.accTypeErr = 'Something went wrong please try again!';
-        setError(obj);
+  const registerValidUser = async (data) => {
+    try {
+      const response = await registerUser(data);
+      if (response.data?.status === 'success') {
+        navigate('/login');
+      } else if (response.error?.status !== 200) {
+        setApiErrors(response.error.data.message);
+      } else if (!response.data) {
+        setApiErrors(response.error.data.message);
       }
+    } catch (error) {
+      setApiErrors(error);
     }
   };
 
   return (
-    <>
-      {isLoading && <span className="loader"></span>}
-      <h1 className="mt-4">Registration</h1>
+    <div className="w-100">
+      <h1 className="mt-4">REGISTER </h1>
+
       <div className="form reg-form">
-        <form type="submit" className="main-container">
+        <form
+          type="submit"
+          className="main-container"
+          onSubmit={handleSubmit(registerValidUser)}
+        >
           <div className="form-label-container pl-3">
             <div className="label-control">
               <label htmlFor="userData.email">
@@ -130,62 +89,89 @@ const Register = () => {
               <input
                 className="form-control"
                 type="text"
-                onChange={(e) => (userData.firstname = e.target.value)}
+                id="firstname"
+                name="firstname"
+                placeholder="Enter first name"
+                {...register('firstname')}
               />
-              <DisplayError error={error.firstnameErr} />
+              {errors.firstname && (
+                <span className="error"> {errors.firstname?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
               <input
                 className="form-control"
                 type="text"
-                onChange={(e) => (userData.lastname = e.target.value)}
+                id="lastname"
+                name="lastname"
+                placeholder="Enter last name"
+                {...register('lastname')}
               />
-              <DisplayError error={error.lastNameErr} />
+              {errors.lastname && (
+                <span className="error"> {errors.lastname?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
               <input
                 className="form-control"
                 type="text"
-                onChange={(e) => (userData.username = e.target.value)}
+                id="username"
+                name="username"
+                placeholder="Enter username"
+                {...register('username')}
               />
-              <DisplayError error={error.usernameErr} />
+              {errors.username && (
+                <span className="error"> {errors.username?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
               <input
                 className="form-control"
-                type="userData.email"
-                onChange={(e) => (userData.email = e.target.value)}
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter email"
+                {...register('email')}
               />
-              <DisplayError error={error.emailErr} />
+              {errors.email && (
+                <span className="error"> {errors.email?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
               <input
                 className="form-control"
                 type="password"
-                onChange={(e) => (userData.password = e.target.value)}
+                id="password"
+                name="password"
+                placeholder="Enter password"
+                {...register('password')}
               />
-              <DisplayError error={error.passwordErr} />
+              {errors.password && (
+                <span className="error"> {errors.password?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
               <input
                 className="form-control"
                 type="password"
-                onChange={(e) => (userData.confirmPassword = e.target.value)}
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirm password"
+                {...register('confirmPassword')}
               />
-              <DisplayError error={error.confirmPasswordErr} />
+              {errors.confirmPassword && (
+                <span className="error">{errors.confirmPassword?.message}</span>
+              )}
             </div>
             <div className="form-inputs">
-              <div
-                className="d-flex align-items-center h-100"
-                onChange={(e) => (userData.isPrivate = e.target.value)}
-              >
+              <div className="d-flex align-items-center h-100">
                 <input
                   className="mr-2"
                   type="radio"
                   value="true"
-                  name="accType"
+                  name="isPrivate"
                   id="private"
-                  defaultChecked={userData.isPrivate === 'true'}
+                  {...register('isPrivate')}
                 />
                 <label className="mb-0" htmlFor="private">
                   Private
@@ -194,18 +180,20 @@ const Register = () => {
                   className="mx-2"
                   type="radio"
                   value="false"
-                  name="accType"
+                  name="isPrivate"
                   id="public"
-                  defaultChecked={userData.isPrivate === 'false'}
+                  {...register('isPrivate')}
                 />
                 <label className="mb-0" htmlFor="public">
                   Public
                 </label>
               </div>
-              <DisplayError error={error.accTypeErr} />
+              {errors.isPrivate && (
+                <span className="error">{errors.isPrivate?.message}</span>
+              )}
             </div>
+            {apiErrors && <div className="error">{apiErrors}</div>}
             <button
-              onClick={handleSubmit}
               className="btn btn-lg btn-primary mt-4 bg-blue ml-2"
               type="submit"
             >
@@ -217,7 +205,7 @@ const Register = () => {
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 };
 

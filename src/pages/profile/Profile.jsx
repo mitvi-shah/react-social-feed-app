@@ -1,23 +1,39 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 
-import cloneDeep from 'lodash/cloneDeep';
+import { yupResolver } from '@hookform/resolvers/yup';
 import Accordion from 'react-bootstrap/Accordion';
+import { useForm } from 'react-hook-form';
+import * as yup from 'yup';
 
-import DisplayError from '../../components/DisplayError';
+import Loader from '../../components/Loader';
 import { useUpdateUserMutation } from '../../store/authApi';
 import { AuthContext } from '../../store/authContext';
+import {
+  profileSchema,
+  registrationSchema,
+} from '../../utils/validationSchemas';
 
 const Profile = () => {
   const [userData, setUserData] = useState({});
-  const [type, setType] = useState('password');
+  const [passwordType, setPasswordType] = useState('password');
+  const [buttonType, setButtonType] = useState('submit');
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
-  const [error, setError] = useState({});
   const [isEditMode, setEditMode] = useState(false);
   const { userAuth, setUserAuth } = useContext(AuthContext);
   const [updateUser, { isError, isLoading }] = useUpdateUserMutation();
   const passwdRef = useRef(null);
-
+  const [apiErrors, setApiErrors] = useState('');
+  const schema = yup
+    .object()
+    .shape(isAccordionOpen ? registrationSchema : profileSchema);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
   useEffect(() => {
     userAuth && assignValues();
   }, [userAuth]);
@@ -48,98 +64,42 @@ const Profile = () => {
     }
   };
   const cancelPasswordUpdate = () => {
-    if (isAccordionOpen) {
-      error.confirmPasswordErr = null;
-      delete userData.password;
-      delete userData.confirmPassword;
-    }
+    // if (isAccordionOpen) {
+    //   error.confirmPasswordErr = null;
+    //   delete userData.password;
+    //   delete userData.confirmPassword;
+    // }
     setIsAccordionOpen(!isAccordionOpen);
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError({});
-    const obj = {};
-    if (!userData.firstname) {
-      obj.firstNameErr = 'Please enter first name';
-    } else if (!/^[a-zA-Z]+$/.test(userData.firstname)) {
-      obj.firstNameErr = 'Only letters are allowed!';
-    }
-    if (!userData.lastname) {
-      obj.lastNameErr = 'Please enter last name';
-    } else if (!/^[a-zA-Z]+$/.test(userData.lastname)) {
-      obj.lastNameErr = 'Only letters are allowed!';
-    }
-    if (!userData.username) {
-      obj.usernameErr = 'Please enter username';
-    } else if (userData.username.length < 6) {
-      obj.usernameErr = 'Username must be at least 6 characters long';
-    }
-    if (!userData.email) {
-      obj.emailErr = 'Please enter email';
-    } else if (!userData.email.toLowerCase().match(/^\S+@\S+\.\S+$/)) {
-      obj.emailErr = 'Please enter valid email!';
-    }
-    if (isAccordionOpen && !userData.password) {
-      obj.passwordErr = 'Please enter password';
-    } else if (
-      isAccordionOpen &&
-      (userData.password.length < 8 || userData.password.length > 15)
-    ) {
-      obj.passwordErr = 'Password must be between 8 to 15 characters!';
-    } else if (
-      isAccordionOpen &&
-      !/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(
-        userData.password
-      )
-    ) {
-      obj.passwordErr =
-        'Password must contain a letter, a number & a special character!';
-    }
-    if (isAccordionOpen && !userData.confirmPassword) {
-      obj.confirmPasswordErr = 'Please confirm password';
-    } else if (
-      isAccordionOpen &&
-      userData.confirmPassword !== userData.password
-    ) {
-      obj.confirmPasswordErr = 'Password and confirm Password must be same!';
-    }
-    if (!userData.isPrivate) {
-      obj.accTypeErr = 'Please select account type';
-    }
-    setError(obj);
-    if (!Object.keys(obj).length) {
-      try {
-        setEditMode(false);
-        const user = cloneDeep(userData);
-        delete user.confirmPassword;
-        setIsAccordionOpen(false);
-        console.log(user);
-        const response = await updateUser(userData);
-        if (response?.data?.status === 'success') {
-          setUserData({});
-          setUserAuth(response.data.data);
-        } else if (isError) {
-          obj.accTypeErr = response.error.data.message;
-        } else if (!response.data) {
-          obj.accTypeErr = 'Something went wrong please try again!';
-          setError(obj);
-        }
-      } catch (error) {
-        obj.accTypeErr = 'Something went wrong please try again!';
+  const updateUserProfile = async (user) => {
+    console.log('first');
+    try {
+      setEditMode(false);
+      isAccordionOpen && setIsAccordionOpen(false);
+      console.log(user);
+      const response = await updateUser(user);
+      if (response?.data?.status === 'success') {
+        setUserAuth(response.data.data);
+      } else if (isError) {
+        setApiErrors(response.error.data.message);
+      } else if (!response.data) {
+        setApiErrors('Something went wrong please try again!');
       }
+    } catch (error) {
+      setApiErrors('Something went wrong please try again!');
     }
   };
 
   return (
     <>
-      {isLoading && <span className="loader"></span>}
+      {isLoading && <Loader />}
       <div className="w-100 page-layout d-flex justify-content-center ">
         <section className="col-lg-9">
           <div className="card mt-4">
             <div className="card-header">
               <h4>Profile Details</h4>
             </div>
-            <form>
+            <form type="submit" onSubmit={handleSubmit(updateUserProfile)}>
               <div className="card-body">
                 <div className="col-lg-12 d-flex mb-3">
                   <div className="col-lg-6 pe-2">
@@ -149,24 +109,23 @@ const Profile = () => {
                     <div>
                       {isEditMode ? (
                         <input
-                          value={userData.firstname}
+                          defaultValue={userData.firstname}
                           className="form-control"
                           name="firstname"
-                          onChange={(e) => {
-                            setUserData({
-                              ...userData,
-                              firstname: e.target.value,
-                            });
-                          }}
                           placeholder="Enter your First name"
                           type="text"
+                          id="firstname"
+                          {...register('firstname')}
                         />
                       ) : (
                         userData.firstname
                       )}
-                      <div className="messages">
-                        <DisplayError error={error.firstNameErr} />
-                      </div>
+
+                      {errors.firstname && (
+                        <span className="error">
+                          {errors.firstname?.message}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="col-lg-6 ps-2">
@@ -176,24 +135,23 @@ const Profile = () => {
                     <div>
                       {isEditMode ? (
                         <input
-                          value={userData.lastname}
+                          defaultValue={userData.lastname}
                           className="form-control"
                           name="lastname"
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              lastname: e.target.value,
-                            })
-                          }
+                          id="lastname"
                           placeholder="Enter your Last Name"
                           type="text"
+                          {...register('lastname')}
                         />
                       ) : (
                         userData.lastname
                       )}
-                      <div className="messages">
-                        <DisplayError error={error.lastNameErr} />
-                      </div>
+
+                      {errors.lastname && (
+                        <span className="error">
+                          {errors.lastname?.message}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -205,24 +163,22 @@ const Profile = () => {
                     <div>
                       {isEditMode ? (
                         <input
-                          value={userData.username}
+                          defaultValue={userData.username}
                           className="form-control"
                           placeholder="Enter your username"
                           name="username"
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              username: e.target.value,
-                            })
-                          }
                           type="text"
+                          id="username"
+                          {...register('username')}
                         />
                       ) : (
                         userData.username
                       )}
-                      <div className="messages">
-                        <DisplayError error={error.usernameErr} />
-                      </div>
+                      {errors.username && (
+                        <span className="error">
+                          {errors.username?.message}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="col-lg-6 ps-2">
@@ -232,21 +188,20 @@ const Profile = () => {
                     <div>
                       {isEditMode ? (
                         <input
-                          value={userData.email}
+                          defaultValue={userData.email}
                           className="form-control"
-                          onChange={(e) =>
-                            setUserData({ ...userData, email: e.target.value })
-                          }
+                          id="email"
                           name="email"
                           placeholder="Enter your email"
                           type="email"
+                          {...register('email')}
                         />
                       ) : (
                         userData.email
                       )}
-                      <div className="messages">
-                        <DisplayError error={error.emailErr} />
-                      </div>
+                      {errors.email && (
+                        <span className="error"> {errors.email?.message}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -261,12 +216,10 @@ const Profile = () => {
                           className="mr-2"
                           type="radio"
                           value="true"
-                          name="accType"
+                          name="isPrivate"
                           id="private"
                           defaultChecked={userData.isPrivate === 'true'}
-                          onChange={() =>
-                            setUserData({ ...userData, isPrivate: 'true' })
-                          }
+                          {...register('isPrivate')}
                         />
                         <label className="mb-0 mr-2" htmlFor="private">
                           Private
@@ -276,11 +229,9 @@ const Profile = () => {
                           type="radio"
                           value="false"
                           id="public"
-                          name="accType"
+                          name="isPrivate"
                           defaultChecked={userData.isPrivate === 'false'}
-                          onChange={() =>
-                            setUserData({ ...userData, isPrivate: 'false' })
-                          }
+                          {...register('isPrivate')}
                         />
                         <label className="mb-0" htmlFor="public">
                           Public
@@ -291,9 +242,9 @@ const Profile = () => {
                     ) : (
                       <div>Public</div>
                     )}
-                    <div className="messages">
-                      <DisplayError error={error.accTypeErr} />
-                    </div>
+                    {errors.isPrivate && (
+                      <span className="error">{errors.isPrivate?.message}</span>
+                    )}
                   </div>
                   {isEditMode && (
                     <div className="col-lg-6 ps-2">
@@ -301,47 +252,52 @@ const Profile = () => {
                         <Accordion.Item eventKey="0">
                           <Accordion.Header>
                             <span className="btn btn-primary">
-                              {/* Change Password */}
                               {isAccordionOpen ? 'Cancel' : 'Change Password'}
                             </span>
                           </Accordion.Header>
                           <Accordion.Body>
                             <input
-                              onChange={(e) =>
-                                (userData.password = e.target.value)
-                              }
-                              className="form-control w-100"
+                              className="form-control w-100 my-2"
                               name="password"
+                              id="password"
                               placeholder="Enter new password"
-                              type={type}
+                              type={passwordType}
+                              {...register('password')}
                             />
-                            <div className="messages">
-                              <DisplayError error={error.passwordErr} />
-                            </div>
+                            {errors.password && (
+                              <span className="error">
+                                {errors.password?.message}
+                              </span>
+                            )}
                             <input
                               ref={passwdRef}
                               onChange={(e) =>
                                 (userData.confirmPassword = e.target.value)
                               }
-                              className="form-control w-100"
-                              name="cpassword"
+                              className="form-control w-100 my-2"
+                              id="confirmPassword"
+                              name="confirmPassword"
                               placeholder="Please confirm new password"
-                              type={type}
+                              type={passwordType}
+                              {...register('confirmPassword')}
                             />
 
-                            <div className="messages">
-                              <DisplayError error={error.confirmPasswordErr} />
-                            </div>
+                            {errors.confirmPassword && (
+                              <span className="error">
+                                {errors.confirmPassword?.message}
+                              </span>
+                            )}
                             <button
                               type="button"
                               className="btn btn-primary"
                               onClick={() =>
-                                type === 'password'
-                                  ? setType('text')
-                                  : setType('password')
+                                passwordType === 'password'
+                                  ? setPasswordType('text')
+                                  : setPasswordType('password')
                               }
                             >
-                              {type === 'password' ? 'Show' : 'Hide'} Password
+                              {passwordType === 'password' ? 'Show' : 'Hide'}{' '}
+                              Password
                             </button>
                           </Accordion.Body>
                         </Accordion.Item>
@@ -349,23 +305,29 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
+
                 <div className="d-flex justify-content-end">
                   <button
-                    type="button"
-                    onClick={(e) =>
-                      isEditMode ? handleSubmit(e) : setEditMode(true)
-                    }
+                    type={buttonType}
+                    onClick={(e) => {
+                      !isEditMode && setEditMode(true);
+                      buttonType === 'button'
+                        ? setButtonType('submit')
+                        : setButtonType('button');
+                    }}
                     className="btn btn-outline-success  d-grid mr-3"
                   >
                     {isEditMode ? 'Update' : 'Edit Profile'}
                   </button>
+
+                  {apiErrors && <div className="error">{apiErrors}</div>}
                   {isEditMode && (
                     <button
                       type="button"
                       onClick={() => {
                         setEditMode(false);
+                        setButtonType('button');
                         setIsAccordionOpen(false);
-                        setError({});
                         assignValues();
                       }}
                       className="btn btn-outline-danger d-grid"

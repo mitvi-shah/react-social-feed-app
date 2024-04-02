@@ -3,12 +3,12 @@ import { createContext, useEffect, useState } from 'react';
 import PropType from 'prop-types';
 
 import { useGetUserQuery } from './authApi';
+import { store } from './store';
 import { getCookieValue } from '../route/RequireAuth';
 export const AuthContext = createContext();
 
 export const AuthContextProvider = (props) => {
   const [userAuth, setUserAuth] = useState(null);
-
   const { data } = useGetUserQuery(undefined, {
     skip:
       !getCookieValue('accessToken').length ||
@@ -29,6 +29,8 @@ export const AuthContextProvider = (props) => {
     document.cookie =
       'accessToken=;path="";expires=Thu, 01 Jan 1970 00:00:01 GMT';
     document.cookie = 'id=;path="";expires=Thu, 01 Jan 1970 00:00:01 GMT';
+    setUserAuth(null);
+    store.dispatch({ type: 'logout' });
   };
   return (
     <AuthContext.Provider

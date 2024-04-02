@@ -20,6 +20,7 @@ const Navbar = () => {
     }).then((result) => {
       if (result.isConfirmed) {
         removeUser();
+
         navigate('/login');
         Swal.fire('You are successfully Logged Out', '', 'success');
       }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import './home.css';
 
@@ -11,10 +11,19 @@ import useDebounce from '../../hooks/debounce';
 const Home = () => {
   const [showModal, setShowModal] = useState(null);
   const [query, setQuery] = useState('');
+  const myPostsRef = useRef(null);
 
   const [params, setParams] = useSearchParams();
   const debouncedQuery = useDebounce(query, 500);
 
+  useEffect(() => {
+    if (params.get('page') && debouncedQuery) {
+      setQuery('');
+    }
+    if (params.get('page') && myPostsRef.current?.checked) {
+      myPostsRef.current.checked = false;
+    }
+  }, [debouncedQuery, params]);
   useEffect(() => {
     setSearchParams();
   }, [debouncedQuery]);
@@ -24,6 +33,7 @@ const Home = () => {
     debouncedQuery.trim() !== ''
       ? newParams.set('title', debouncedQuery)
       : newParams.delete('title');
+    newParams.delete('page');
     setParams(newParams.toString());
   };
 
@@ -32,6 +42,7 @@ const Home = () => {
     checked
       ? newParams.set('isMyPostsOnly', true)
       : newParams.delete('isMyPostsOnly');
+    newParams.delete('page');
     setParams(newParams.toString());
   };
   return (
@@ -53,6 +64,7 @@ const Home = () => {
         <div className="myPostSwitch btn btn-outline-secondary">
           <label className="d-inline">
             <input
+              ref={myPostsRef}
               className="mr-2"
               type="checkbox"
               onChange={(e) => setMyPostFilterParams(e.target.checked)}
